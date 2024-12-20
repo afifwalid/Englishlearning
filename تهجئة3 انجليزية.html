@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Spelling Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(120deg, #74ebd5, #acb6e5);
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        h1 {
+            color: #007bff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .drop-zone {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 10px;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+            background: rgba(240, 248, 255, 0.7);
+        }
+        .drop-slot {
+            width: 50px;
+            height: 50px;
+            margin: 0 5px;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .drop-slot.active {
+            background-color: #e6f7ff;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        }
+        .drag-letter {
+            margin: 5px;
+            padding: 10px;
+            background: linear-gradient(120deg, #007bff, #0056b3);
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: grab;
+            user-select: none;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+        .drag-letter:hover {
+            background: linear-gradient(120deg, #0056b3, #003d80);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        .letters-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+        button:hover {
+            background-color: #218838;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .message {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #28a745;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>English Spelling Game</h1>
+        <p>Drag and drop letters into the correct slots to spell the word you hear. Drag back to edit.</p>
+        <button onclick="startGame()">Start Game</button>
+        <button onclick="repeatWord()">Repeat Word</button>
+        <div id="drop-zone" class="drop-zone"></div>
+        <div id="letters-container" class="letters-container"></div>
+        <p class="message" id="message"></p>
+    </div>
+
+    <script>
+        // بنك الكلمات (1000 كلمة)
+        const words = [
+            "analysis", "integration", "framework", "innovation", "challenge", 
+            "phenomenon", "paradox", "deduction", "strategy", "scalability",
+            "abstraction", "algorithm", "synergy", "harmony", "aesthetic", 
+            "computation", "parallel", "distributed", "encryption", "decryption", 
+            "authentication", "authorization", "architecture", "optimization", 
+            "protocol", "sustainability", "evaluation", "implementation", 
+            "synchronization", "visualization", "aggregation", "modularity", 
+            "flexibility", "standardization", "benchmarking", "validation", 
+            "quantification", "interpolation", "approximation", "estimation", 
+            "prioritization", "classification", "normalization", "segmentation", 
+            "regression", "clustering", "heuristics", "granularity", "configuration", 
+            "collaboration", "refinement", "algorithmic", "parameter", "integration", 
+            "multithreading", "operational", "optimization", "innovation", "sustainability", 
+            "calculation", "differentiation", "functionality", "prototyping", "dynamics",
+            "visualization", "processes", "connectivity", "redundancy", "evaluation", 
+            "feedback", "increment", "scalability", "computation", "hierarchy", 
+            "iteration", "optimization", "equilibrium", "transformation", "reduction", 
+            "simulation", "analysis", "standardization", "detection", "processing", 
+            "verification", "control", "assertion", "modularization", "consistency", 
+            "optimization", "configuration", "formulation", "abstraction", "paradigm",
+            "constraint", "iteration", "scalability", "quantification", "validation", 
+            "sustainability", "automation", "parallelization", "automation", "transformation", 
+            "standardization", "computational", "asymmetry", "feedback", "intelligence",
+            "continuity", "algorithm", "systems", "analysis", "encryption", "logic", 
+            "classification", "processing", "heuristics", "norms", "regression"
+        ];
+
+        let currentWord = '';
+        let userAnswer = [];
+        let currentWordAudio = null;
+
+        // بدء اللعبة
+        function startGame() {
+            resetGame();
+            currentWord = getRandomWord();
+            playWordAudio(currentWord);
+            setupDropSlots(currentWord);
+            setupDragLetters();
+        }
+
+        // تشغيل صوت الكلمة
+        function playWordAudio(word) {
+            currentWordAudio = new SpeechSynthesisUtterance(word);
+            currentWordAudio.lang = 'en-US';
+            speechSynthesis.speak(currentWordAudio);
+        }
+
+        // تكرار صوت الكلمة
+        function repeatWord() {
+            if (currentWordAudio) {
+                speechSynthesis.speak(currentWordAudio);
+            }
+        }
+
+        // اختيار كلمة عشوائية
+        function getRandomWord() {
+            const randomIndex = Math.floor(Math.random() * words.length);
+            return words[randomIndex];
+        }
+
+        // إنشاء خانات الإسقاط بناءً على طول الكلمة
+        function setupDropSlots(word) {
+            const dropZone = document.getElementById('drop-zone');
+            dropZone.innerHTML = '';
+            for (let i = 0; i < word.length; i++) {
+                const slot = document.createElement('div');
+                slot.classList.add('drop-slot');
+                slot.dataset.index = i;
+                slot.ondrop = (event) => dropHandler(event, i);
+                slot.ondragover = allowDrop;
+                slot.ondragleave = () => slot.classList.remove('active');
+                slot.ondragenter = () => slot.classList.add('active');
+                dropZone.appendChild(slot);
+            }
+        }
+
+        // عرض جميع الأحرف الإنجليزية بترتيبها
+        function setupDragLetters() {
+            const lettersContainer = document.getElementById('letters-container');
+            lettersContainer.innerHTML = '';
+            const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+            alphabet.forEach(letter => {
+                const letterElement = document.createElement('div');
+                letterElement.textContent = letter;
+                letterElement.classList.add('drag-letter');
+                letterElement.draggable = true;
+                letterElement.ondragstart = dragStart;
+                lettersContainer.appendChild(letterElement);
+            });
+        }
+
+        // السماح بالإسقاط
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        // وظيفة السحب
+        function dragStart(event) {
+            event.dataTransfer.setData('text', event.target.textContent);
+        }
+
+        // وظيفة الإسقاط
+        function dropHandler(event, index) {
+            event.preventDefault();
+            const letter = event.dataTransfer.getData('text');
+            const slot = document.querySelector(`.drop-slot[data-index='${index}']`);
+            if (slot) {
+                if (slot.textContent) {
+                    returnToKeyboard(slot.textContent);
+                }
+                slot.textContent = letter;
+                slot.classList.remove('active');
+                userAnswer[index] = letter.toLowerCase();
+                checkAnswer();
+            }
+        }
+
+        // إعادة الحرف إلى لوحة المفاتيح
+        function returnToKeyboard(letter) {
+            const letterElement = document.createElement('div');
+            letterElement.textContent = letter;
+            letterElement.classList.add('drag-letter');
+            letterElement.draggable = true;
+            letterElement.ondragstart = dragStart;
+            document.getElementById('letters-container').appendChild(letterElement);
+        }
+
+        // التحقق من الإجابة
+        function checkAnswer() {
+            const message = document.getElementById('message');
+            if (userAnswer.join('') === currentWord) {
+                message.textContent = "Correct! Great job!";
+                setTimeout(startGame, 2000); // الانتقال للكلمة التالية
+            } else {
+                message.textContent = '';
+            }
+        }
+
+        // إعادة تعيين اللعبة
+        function resetGame() {
+            userAnswer = [];
+            document.getElementById('drop-zone').innerHTML = '';
+            document.getElementById('letters-container').innerHTML = '';
+            document.getElementById('message').textContent = '';
+        }
+    </script>
+</body>
+</html>
